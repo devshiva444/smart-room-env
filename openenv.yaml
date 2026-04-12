@@ -1,0 +1,33 @@
+id: smart-room-automation
+name: Smart Room Automation Environment
+version: 1.1.0
+entrypoint: server.app:main
+
+endpoints:
+  reset: /reset
+  step: /step
+  state: /state
+
+additional_endpoints:
+  grader: /grader
+  tasks: /tasks
+
+actions:
+  type: discrete
+  values:
+    0: do nothing
+    1: light ON
+    2: light OFF
+    3: fan ON
+    4: fan OFF
+
+observation:
+  type: dict
+  properties:
+    temperature: { type: float }
+    light_on: { type: boolean }
+    fan_on: { type: boolean }
+    occupancy: { type: boolean }
+    energy_used: { type: float }
+    reward: { type: float }
+    done: { type: boolean }
