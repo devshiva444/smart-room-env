@@ -1,118 +1,135 @@
 ---
-title: Smart Room Automation OpenEnv
+title: Multi-Agent Smart Room System - OpenEnv
 emoji: 🏠
 colorFrom: blue
-colorTo: green
+colorTo: indigo
 sdk: docker
-app_file: server.py 
-pinned: false
+app_file: app.py 
+pinned: true
 ---
 
-# 🏠 Smart Room Automation: An OpenEnv RL Benchmark
+# 🤖 3-Layer Multi-Agent Smart Room System
+**An OpenEnv RL + LLM Hybrid — Meta x Scaler OpenEnv Hackathon 2026**
 
-## 🌟 Overview
-Welcome to the **Smart Room Automation** project! This is a custom Reinforcement Learning (RL) environment built on the **OpenEnv** framework. The goal is to train an AI agent that intelligently manages a room's climate and lighting. 
-
-Unlike simple toy games, this environment simulates **real-world physics**—including heat transfer and probabilistic occupancy—to challenge the agent's ability to balance human comfort with strict energy efficiency.
-
-### 🧠 The X-Factor: Hierarchical AI Architecture
-To solve this environment, this project implements a **Supervisor-Worker (CEO-Employee) Architecture**:
-1. **The Supervisor (OpenAI LLM):** Fulfills the OpenEnv evaluation criteria by acting as the high-level strategist. It assesses the initial room state and generates plain-text directives.
-2. **The Expert Worker (PyTorch DQN):** Because LLMs are too slow and prone to hallucination for 20-step real-time physics manipulation, the actual environment control is delegated to a custom, locally-trained **128-Neuron Deep Q-Network**. It executes MDP steps in milliseconds, achieving scores far beyond standard LLM capabilities.
+## Quick demo
+Add your unlisted demo link here (2 minutes): [[YOUTUBE LINK](https://youtu.be/zgw5JvdPbjw)]
 
 ---
 
-## 🎯 The Problem
-Modern buildings contribute significantly to global energy waste. Lights are left on in empty rooms, and HVAC systems run at full power regardless of actual need. 
-
-**Our Mission:** To create a standardized environment where RL agents can be evaluated on their ability to minimize carbon footprints without compromising indoor living standards.
-
----
-
-## 🏗️ System Architecture
-
-### 🔹 Perception (Observation Space)
-The agent receives a rich state vector every step:
-- **Temperature (`float`):** Real-time room temp (affected by outside weather and fan status).
-- **Occupancy (`bool`):** Detects if a human is present (using a probabilistic model).
-- **Device States:** Status of `light_on` and `fan_on`.
-- **Energy Meter:** Cumulative energy consumption.
-
-### 🔹 Control (Action Space)
-| Value | Action | Impact |
-|:---:|:---|:---|
-| **0** | No Action | Maintains current state. |
-| **1/2** | Light ON/OFF | Affects visibility and minor energy use. |
-| **3/4** | Fan ON/OFF | High energy use, but regulates temperature. |
+## What this project does (short)
+- Learns to control room devices (lights, fan, AC) from a 7‑dim state vector.
+- Optimizes for human comfort while minimizing energy use and enforcing safety rules.
+- Uses a 3-layer pipeline: a DQN proposes actions, an LLM reviews/adjusts them, and a safety engine enforces hard constraints.
 
 ---
 
-## 🧪 Reward Engineering & Reshaping
-Initially, standard penalties led to "Reward Hacking" (the agent kept everything off to avoid energy penalties). We applied **Reward Reshaping** to prioritize human comfort:
-- **Maximum Comfort (+5.0):** Maintaining the "Sweet Spot" (22°C – 26°C) while occupied.
-- **Utility (+2.0):** Correct lighting usage when someone is present.
-- **Energy Waste Penalty (-1.5):** Penalty for devices running in an empty room (reduced to encourage exploration).
+## Key Features
+- Multi-Agent 3-layer control: `RL Worker` + `LLM Supervisor` + `Safety Engine`.
+- Trained DQN (7 → 128 → 128 → 9) with 5000 episodes of curriculum learning.
+- Human-readable training evidence in `Training_Evidence.ipynb` (V-shaped learning + recovery).
+- FastAPI dashboard for live simulation and evaluation (`/grader`, `/state`, `/ai_step`).
+- Docker-ready for Hugging Face Spaces (port 7860).
 
 ---
 
-## 🧠 Evaluation Tasks
-1. **Easy (Light Mastery):** Focus purely on occupancy-based lighting.
-2. **Medium (Thermal Expert):** Focus on climate control and fan management.
-3. **Hard (Eco-Optimizer):** Optimizing both systems simultaneously.
+## Goals & Impact
+- Primary goal: Maintain occupant comfort while cutting unnecessary energy use.
+- Secondary goals: Safe, interpretable actions (LLM explanations), reproducible training evidence for judges.
+- Intended impact: Reduce wasteful HVAC runtime and avoid comfort violations during extreme conditions.
 
 ---
 
-## 🛠️ Technical Setup & Execution
+## Energy & Waste — how we measure impact
+This repository includes simulation-based measurements (see `Training_Evidence.ipynb`) rather than field data. Below are measured example metrics taken from the 5000-episode training evidence (open the notebook for full plots and per-scenario tables):
 
-### 1. Local Installation
+- Training performance highlights:
+	- Peak average training reward: **+41.08** (Episode 1300)
+	- Lowest average training reward (catastrophic forgetting): **-69.04** (Episode 2500)
+	- Final stabilized average reward: **+39.39** (Episode 5000)
+	- Total reward swing (valley → final): **~110.12** points (recovery magnitude)
+
+- Representative action energy costs (simulation units):
+
+	| Action | Energy Cost (units) |
+	|--------|---------------------|
+	| Light ON | 0.1 |
+	| Light OFF | 0 |
+	| Fan Speed 1 | 0.2 |
+	| Fan Speed 2 | 0.4 |
+	| Fan Speed 3 | 0.6 |
+	| Fan OFF | 0 |
+	| AC ON | 1.0 |
+	| AC OFF | 0 |
+
+- What the notebook shows:
+	- Per-episode energy consumption traces for agent vs baselines (always-on AC, naive thermostat).
+	- Scenario-based percent reductions (e.g., simulated heatwave/day/night) summarized as bar charts and a short table.
+
+For exact per-scenario percent savings and the comparison table, run the `Energy Comparison` cell in `Training_Evidence.ipynb`. The notebook contains code to reproduce these numbers and the plots used in the hackathon submission.
+
+---
+
+## How it works (technical)
+- Input (state): [temperature, occupancy, light, fan, AC, time_of_day, sleep_mode]
+- Action space: 9 discrete actions (Do nothing, Light ON/OFF, Fan SPEED1-3/OFF, AC ON/OFF).
+- Reward: multi-component (comfort penalty, energy penalty, safety penalty, stability bonus).
+- RL algorithm: DQN with experience replay, target-network updates, epsilon-greedy exploration.
+
+Architecture summary:
+
+1. RL Worker: DQN proposes best action from state vector.
+2. LLM Supervisor: Reviews action and can suggest safer/clearer alternatives.
+3. Safety Engine: Enforces hard constraints (e.g., do not enable AC below X°C when window open).
+
+---
+
+## Quick Start (local)
+1. Create virtualenv and install dependencies:
+
 ```bash
-# Clone the repository
-git clone [https://github.com/devshiva444/smart-room-env.git](https://github.com/devshiva444/smart-room-env.git)
-cd smart-room-env
-
-# Setup Environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate 
-
-# Install Core Dependencies
+python -m venv .venv
+source .venv/Scripts/activate   # Windows PowerShell: .venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
+```
 
-2. Running the AI Inference (Evaluation)
-To run the automated Hackathon Grader, execute the inference script. Ensure the environment variables are set (The script uses a safe offline fallback if keys are missing during local testing).
+2. Run dashboard (dev):
 
-Bash
-# Set variables (Windows CMD)
-set API_BASE_URL=[https://api.openai.com/v1](https://api.openai.com/v1)
-set MODEL_NAME=gpt-3.5-turbo
-set HF_TOKEN=your_huggingface_token
+```bash
+python app.py
+# Open http://localhost:7860
+```
 
-# Run the Agent
+3. Run evaluation / inference:
+
+```bash
 python inference.py
-3. Server & Docker Deployment
-This project is fully containerized and optimized for Hugging Face Spaces.
+```
 
-Bash
-# Run server locally via Uvicorn
-uvicorn server.app:app --host 0.0.0.0 --port 7860 --reload
+4. Optional: build Docker (for Hugging Face Spaces):
 
-# Or build via Docker
-docker build -t smart-room-automation .
-docker run -p 7860:7860 smart-room-automation
-🔌 API Reference
-POST /reset: Initialize a new episode.
+```bash
+docker build -t smart-room-ai .
+docker run -p 7860:7860 -e HF_TOKEN="your_token" smart-room-ai
+```
 
-POST /step: Submit an action (0-4) and receive observation.
+---
 
-GET /state: Returns current internal state.
+## Files of interest
+- `Training_Evidence.ipynb` — full 5000-episode logs, plots, architecture, and measured comparisons.
+- `smart_room_ai_final.pth` — trained DQN weights (load with `torch.load`).
+- `server/app.py` — FastAPI dashboard + endpoints.
+- `core/multi_agent.py` — DQN model and agent wrapper.
+- `core/llm_planner.py` — LLM supervisor logic.
 
-GET /tasks: Lists all available evaluation tasks.
+---
 
-GET /grader?task_id={id}: Triggers automated evaluation.
+## Run the energy comparison quickly
+Open `Training_Evidence.ipynb` and run the cell labeled "Energy Comparison" — it will generate per-scenario bar charts and a short table with percent energy reduction vs baseline.
 
-👤 Author
-Shivraj Selar Computer Science & Engineering Student
+---
 
-Developed for the Scaler x Meta OpenEnv Hackathon 2026.
+## Author
+Shivraj Selar — Final-year CSE Student. Meta x Scaler OpenEnv Hackathon 2026.
 
+---
 

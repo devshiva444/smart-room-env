@@ -6,5 +6,5 @@ requests==2.33.0
 openenv-core==0.2.3
 python-dotenv==1.2.2
 torch==2.11.0
-numpy==2.2.6
+numpy==1.26.4
 Jinja2==3.1.6

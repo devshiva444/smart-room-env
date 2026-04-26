@@ -1,0 +1,63 @@
+# --- Environment & Security ---
+.env
+.env.local
+.env.*
+token.json
+*.key
+
+# --- Python & Build ---
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual Environments ---
+.venv/
+venv/
+ENV/
+env/
+python/
+
+# --- Jupyter Notebook ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*-checkpoint.ipynb
+*.ipynb_checkpoints
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.history/
+
+# --- Operating System ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# --- Logs & Databases ---
+logs/
+*.log
+db/
+*.sqlite3
+training_history/
